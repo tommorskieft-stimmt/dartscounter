@@ -1,11 +1,11 @@
 <script setup lang="ts">
-// Root shell — phase 00 scaffolding. Real layout arrives with the design
-// system in phase 01.
+import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
 </script>
 
 <template>
   <main class="app-shell">
     <router-view />
+    <PwaUpdatePrompt />
   </main>
 </template>
 

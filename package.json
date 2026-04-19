@@ -16,13 +16,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install --with-deps chromium"
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "dexie": "^4.0.11",
     "pinia": "^2.3.1",
     "vue": "^3.5.32",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "workbox-window": "^7.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -38,10 +40,13 @@
     "globals": "^15.14.0",
     "happy-dom": "^17.1.0",
     "prettier": "^3.4.2",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.0",
+    "tsx": "^4.21.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.22.0",
     "vite": "^8.0.4",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.0.5",
     "vue-eslint-parser": "^9.4.3",
     "vue-tsc": "^3.2.6"
