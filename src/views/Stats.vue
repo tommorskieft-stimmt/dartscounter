@@ -213,7 +213,13 @@ const TAB_LABELS: string[] = ['Overall', '121', '501', "Barney's"]
 }
 
 .stats__grid--seven {
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
+}
+
+@media (min-width: 560px) {
+  .stats__grid--seven {
+    grid-template-columns: repeat(7, 1fr);
+  }
 }
 </style>

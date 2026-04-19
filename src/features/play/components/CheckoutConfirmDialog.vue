@@ -11,6 +11,11 @@
 // even and within [2K, 40K]. When K < N we also need the remaining
 // amount (S − doubles_sum) to fall in [0, 60·(N−K)] for some even
 // doubles_sum in [2K, 40K].
+//
+// UX: the backdrop does NOT dismiss on click — accidental taps would
+// lose the score the user just entered. Only the explicit Back button
+// cancels. No `backdrop-filter` either (iOS Safari's stacking-context
+// quirks with filter were eating button taps).
 import { computed, ref, watch } from 'vue'
 import { BodyText, Eyebrow, Heading, PrimaryButton, SecondaryButton, SegmentGroup } from '@/design-system'
 
@@ -36,17 +41,12 @@ function feasibleDoubles(score: number, nDarts: 1 | 2 | 3, k: 0 | 1 | 2 | 3): bo
   if (k === nDarts) {
     return score % 2 === 0 && score >= 2 * k && score <= 40 * k
   }
-  // K < N: need some even `doubles_sum` in [2K, 40K] such that
-  // `score − doubles_sum` ∈ [0, 60·(N−K)].
   const maxDoubles = 40 * k
   const minDoubles = 2 * k
   const maxNon = 60 * (nDarts - k)
-  // doubles_sum ≥ max(minDoubles, score − maxNon)
-  // doubles_sum ≤ min(maxDoubles, score)
   const lower = Math.max(minDoubles, score - maxNon)
   const upper = Math.min(maxDoubles, score)
   if (lower > upper) return false
-  // At least one even integer in [lower, upper].
   const firstEven = lower % 2 === 0 ? lower : lower + 1
   return firstEven <= upper
 }
@@ -60,9 +60,7 @@ function maxDoublesFor(score: number, nDarts: 1 | 2 | 3): 0 | 1 | 2 | 3 {
 
 const maxDoubles = computed(() => maxDoublesFor(props.score, darts.value))
 const doublesOptions = computed(() => [0, 1, 2, 3].slice(0, darts.value + 1))
-const doublesDisabled = computed(() =>
-  [0, 1, 2, 3].filter((k) => k > maxDoubles.value),
-)
+const doublesDisabled = computed(() => [0, 1, 2, 3].filter((k) => k > maxDoubles.value))
 
 watch(
   () => props.open,
@@ -74,8 +72,6 @@ watch(
   },
 )
 
-// When the user changes darts-thrown, auto-update doubles to the
-// maximum achievable unless they've manually touched it.
 watch(darts, (n) => {
   if (userTouchedDoubles.value) {
     const maxK = maxDoublesFor(props.score, n)
@@ -97,7 +93,7 @@ function confirm() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="ck-backdrop" @click.self="$emit('cancel')">
+    <div v-if="open" class="ck-backdrop">
       <div class="ck-card" role="dialog" aria-modal="true">
         <Eyebrow style="margin-bottom: 6px; color: var(--ds-green)">Checkout?</Eyebrow>
         <Heading :size="26" style="margin-bottom: 6px">You scored {{ score }}</Heading>
@@ -138,14 +134,17 @@ function confirm() {
 .ck-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 8, 6, 0.82);
   z-index: 260;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /*
+   * iOS Safari loses touch events on children when the parent has
+   * backdrop-filter. Using a plain solid background avoids the
+   * stacking-context quirk that was swallowing button taps.
+   */
 }
 
 .ck-card {
@@ -156,6 +155,10 @@ function confirm() {
   border-radius: var(--ds-radius-xl);
   padding: 22px 24px 20px;
   box-shadow: 0 0 40px var(--ds-green-glow);
+  box-sizing: border-box;
+  max-height: calc(100dvh - 48px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .ck-card__label {
