@@ -1,0 +1,67 @@
+{
+  "name": "One·Two·One — Darts Practice",
+  "short_name": "One·Two·One",
+  "description": "121 checkout, 501, and accuracy drills. Offline-first darts practice. No tracking.",
+  "id": "/dartscounter/",
+  "start_url": "/dartscounter/",
+  "scope": "/dartscounter/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#14100D",
+  "theme_color": "#14100D",
+  "categories": ["games", "sports", "lifestyle"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/dartscounter/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/dartscounter/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/dartscounter/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/dartscounter/icons/icon-monochrome-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "monochrome"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play 121 Checkout",
+      "short_name": "121",
+      "url": "/dartscounter/play/setup?mode=checkout121",
+      "icons": [
+        { "src": "/dartscounter/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Play 501",
+      "short_name": "501",
+      "url": "/dartscounter/play/setup?mode=standardCheckout",
+      "icons": [
+        { "src": "/dartscounter/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Barney's Drill",
+      "short_name": "Barney's",
+      "url": "/dartscounter/play/setup?mode=barneys",
+      "icons": [
+        { "src": "/dartscounter/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
+    }
+  ]
+}

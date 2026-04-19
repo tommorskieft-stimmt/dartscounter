@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background (full bleed) -->
+  <rect width="1024" height="1024" fill="#14100D"/>
+
+  <!-- Safe zone (inner 80%) is centred at (512, 512) with radius ~410. The
+       outer dashed rings sit inside this radius so maskable crops don't
+       clip anything critical. -->
+
+  <!-- Ambient glow -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E53228" stop-opacity="0.32"/>
+      <stop offset="55%" stop-color="#46A06E" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#14100D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="512" cy="512" r="420" fill="url(#glow)"/>
+
+  <!-- Outer ring pair (red/green alternating dashes) -->
+  <circle cx="512" cy="512" r="360" fill="none" stroke="#AB2922" stroke-width="32" stroke-opacity="0.7" stroke-dasharray="70 70"/>
+  <circle cx="512" cy="512" r="360" fill="none" stroke="#367C56" stroke-width="32" stroke-opacity="0.7" stroke-dasharray="70 70" stroke-dashoffset="70"/>
+
+  <!-- Mid ring -->
+  <circle cx="512" cy="512" r="240" fill="none" stroke="rgba(244, 236, 224, 0.22)" stroke-width="8"/>
+
+  <!-- Bullseye core -->
+  <circle cx="512" cy="512" r="140" fill="#46A06E"/>
+  <circle cx="512" cy="512" r="72" fill="#E53228"/>
+  <circle cx="512" cy="512" r="26" fill="#F4ECE0"/>
+</svg>
