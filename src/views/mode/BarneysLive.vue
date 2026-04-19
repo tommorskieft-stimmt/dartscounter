@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eyebrow, SecondaryButton } from '@/design-system'
 import BarneysScoreboardCard from '@/features/play/components/BarneysScoreboardCard.vue'
@@ -17,6 +17,10 @@ let confettiTimer: number | undefined
 
 onMounted(() => {
   session.start()
+})
+
+onBeforeUnmount(() => {
+  if (confettiTimer) window.clearTimeout(confettiTimer)
 })
 
 const targetLabel = computed(() => {
@@ -101,9 +105,9 @@ async function confirmDiscardAndExit() {
   await router.replace({ name: 'home' })
 }
 
-function quitProgressLabel(): string {
-  return `${session.pastRounds.length} target${session.pastRounds.length === 1 ? '' : 's'} · ${session.totalScore} pts`
-}
+const quitProgressLabel = computed(
+  () => `${session.pastRounds.length} target${session.pastRounds.length === 1 ? '' : 's'} · ${session.totalScore} pts`,
+)
 
 function hitLabel(kind: BarneysHit, targetIsBull: boolean): string {
   if (targetIsBull) {
@@ -194,7 +198,7 @@ function hitLabel(kind: BarneysHit, targetIsBull: boolean): string {
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
-      :progress-label="quitProgressLabel()"
+      :progress-label="quitProgressLabel"
       @save="confirmSaveAndExit"
       @discard="confirmDiscardAndExit"
       @cancel="quitDialogOpen = false"

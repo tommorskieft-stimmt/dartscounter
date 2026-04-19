@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.vue'
 import CheckoutRouteCard from '@/features/play/components/CheckoutRouteCard.vue'
@@ -38,6 +38,11 @@ onMounted(() => {
   session.start({ maxDarts: props.maxDarts, rounds: props.rounds })
 })
 
+onBeforeUnmount(() => {
+  if (confettiTimer) window.clearTimeout(confettiTimer)
+  if (transitionTimer) window.clearTimeout(transitionTimer)
+})
+
 const roundsLabel = computed(() => {
   if (props.rounds === null) return String(session.currentRoundNumber)
   return `${session.currentRoundNumber} / ${props.rounds}`
@@ -73,15 +78,13 @@ watch(
   },
 )
 
-// Only haptics live here. Persistence is explicit so Discard actually
-// discards (the previous status-watcher pattern auto-saved on any
-// 'finished' state — including user-initiated discards).
+// Persistence is explicit so Discard actually discards — no auto-save
+// on 'finished' here, only haptics.
 watch(
-  () => session.status,
-  (st) => {
-    if (st.kind === 'bust') haptic('error')
+  () => session.status.kind,
+  (kind) => {
+    if (kind === 'bust') haptic('error')
   },
-  { deep: true },
 )
 
 async function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
@@ -143,12 +146,12 @@ function handleQuit() {
   quitDialogOpen.value = true
 }
 
-function quitProgressLabel(): string {
+const quitProgressLabel = computed(() => {
   const rounds = session.history.length
   const turns = session.currentTurns.length
   if (rounds > 0) return `${rounds} round${rounds === 1 ? '' : 's'} completed`
   return `${turns} turn${turns === 1 ? '' : 's'} this round`
-}
+})
 
 async function confirmSaveAndExit() {
   quitDialogOpen.value = false
@@ -210,7 +213,7 @@ async function confirmDiscardAndExit() {
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
-      :progress-label="quitProgressLabel()"
+      :progress-label="quitProgressLabel"
       @save="confirmSaveAndExit"
       @discard="confirmDiscardAndExit"
       @cancel="quitDialogOpen = false"

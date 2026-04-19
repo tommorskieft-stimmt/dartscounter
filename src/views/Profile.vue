@@ -450,7 +450,7 @@ function selectLevel(l: PlayerLevel) {
 .profile__confirm {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 6, 0.82);
+  background: var(--ds-backdrop-bg);
   z-index: 200;
   display: flex;
   align-items: center;

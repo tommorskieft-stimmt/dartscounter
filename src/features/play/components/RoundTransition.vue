@@ -49,7 +49,7 @@ withDefaults(defineProps<Props>(), { totalRounds: null })
   position: fixed;
   inset: 0;
   z-index: 250;
-  background: rgba(10, 8, 6, 0.86);
+  background: var(--ds-backdrop-bg);
   display: flex;
   align-items: center;
   justify-content: center;

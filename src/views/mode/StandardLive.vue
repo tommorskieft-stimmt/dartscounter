@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import CheckoutConfirmDialog from '@/features/play/components/CheckoutConfirmDialog.vue'
 import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.vue'
@@ -31,6 +31,10 @@ let confettiTimer: number | undefined
 
 onMounted(() => {
   session.start({ startScore: props.startScore, legsTarget: props.legsTarget })
+})
+
+onBeforeUnmount(() => {
+  if (confettiTimer) window.clearTimeout(confettiTimer)
 })
 
 const legsLabel = computed(() => {
@@ -68,13 +72,12 @@ watch(
   },
 )
 
-// Haptics only — persistence is explicit so Discard actually discards.
+// Persistence is explicit so Discard actually discards — only haptics here.
 watch(
-  () => session.status,
-  (st) => {
-    if (st.kind === 'bust') haptic('error')
+  () => session.status.kind,
+  (kind) => {
+    if (kind === 'bust') haptic('error')
   },
-  { deep: true },
 )
 
 async function saveAndGoToOver(completed: boolean) {
@@ -148,12 +151,12 @@ async function confirmDiscardAndExit() {
   await router.replace({ name: 'home' })
 }
 
-function quitProgressLabel(): string {
+const quitProgressLabel = computed(() => {
   const legs = session.legsWon
   const darts = session.dartsTotal
   if (legs > 0) return `${legs} leg${legs === 1 ? '' : 's'} won · ${darts} darts`
   return `${session.turns.length} turn${session.turns.length === 1 ? '' : 's'} · ${darts} darts`
-}
+})
 </script>
 
 <template>
@@ -212,7 +215,7 @@ function quitProgressLabel(): string {
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
-      :progress-label="quitProgressLabel()"
+      :progress-label="quitProgressLabel"
       @save="confirmSaveAndExit"
       @discard="confirmDiscardAndExit"
       @cancel="quitDialogOpen = false"

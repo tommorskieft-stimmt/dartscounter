@@ -134,17 +134,12 @@ function confirm() {
 .ck-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 6, 0.82);
+  background: var(--ds-backdrop-bg);
   z-index: 260;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /*
-   * iOS Safari loses touch events on children when the parent has
-   * backdrop-filter. Using a plain solid background avoids the
-   * stacking-context quirk that was swallowing button taps.
-   */
 }
 
 .ck-card {
