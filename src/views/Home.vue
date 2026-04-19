@@ -9,6 +9,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '@/design-system'
+import RecommendationCard from '@/features/home/RecommendationCard.vue'
 import { useProfileStore } from '@/stores/profile'
 
 const router = useRouter()
@@ -34,8 +35,12 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
       </Heading>
       <BodyText style="margin-top: 8px; font-size: 17px">Ready to practice?</BodyText>
 
+      <div style="margin-top: 20px">
+        <RecommendationCard />
+      </div>
+
       <div class="home__bullseye">
-        <BullseyeMark :size="200" />
+        <BullseyeMark :size="180" />
       </div>
 
       <div class="home__actions">
