@@ -5,6 +5,7 @@ import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.
 import CheckoutRouteCard from '@/features/play/components/CheckoutRouteCard.vue'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
 import QuitConfirmDialog from '@/features/play/components/QuitConfirmDialog.vue'
+import RoundTransition from '@/features/play/components/RoundTransition.vue'
 import ScoreboardCard from '@/features/play/components/ScoreboardCard.vue'
 import TurnInputCard from '@/features/play/components/TurnInputCard.vue'
 import TurnLogList from '@/features/play/components/TurnLogList.vue'
@@ -24,7 +25,14 @@ const session = useCheckout121Store()
 const helperOpen = ref(false)
 const quitDialogOpen = ref(false)
 const showConfetti = ref(false)
+const transition = ref<{
+  open: boolean
+  kind: 'success' | 'fail'
+  roundNumber: number
+  target: number
+}>({ open: false, kind: 'success', roundNumber: 1, target: 121 })
 let confettiTimer: number | undefined
+let transitionTimer: number | undefined
 
 onMounted(() => {
   session.start({ maxDarts: props.maxDarts, rounds: props.rounds })
@@ -88,9 +96,29 @@ watch(
 
 function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
   const result = session.submit(payload.scoreThrown, payload.dartsThrown)
-  if (result.kind === 'turnRecorded' || result.kind === 'roundCompleted') {
-    haptic('light')
+  if (result.kind === 'turnRecorded') haptic('light')
+  if (result.kind === 'roundCompleted') {
+    haptic('success')
+    showRoundTransition('success')
+  } else if (result.kind === 'roundFailed') {
+    haptic('error')
+    showRoundTransition('fail')
   }
+}
+
+function showRoundTransition(kind: 'success' | 'fail') {
+  // Read the just-entered state (session has already advanced).
+  if (session.status.kind === 'finished') return
+  transition.value = {
+    open: true,
+    kind,
+    roundNumber: session.currentRoundNumber,
+    target: session.target,
+  }
+  if (transitionTimer) window.clearTimeout(transitionTimer)
+  transitionTimer = window.setTimeout(() => {
+    transition.value.open = false
+  }, 1400)
 }
 
 function handleUndo() {
@@ -169,11 +197,7 @@ async function confirmDiscardAndExit() {
 
     <TurnLogList :turns="session.currentTurns" />
 
-    <CheckoutHelperSheet
-      :open="helperOpen"
-      :max-darts="session.maxDarts"
-      @close="helperOpen = false"
-    />
+    <CheckoutHelperSheet :open="helperOpen" @close="helperOpen = false" />
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
@@ -181,6 +205,14 @@ async function confirmDiscardAndExit() {
       @save="confirmSaveAndExit"
       @discard="confirmDiscardAndExit"
       @cancel="quitDialogOpen = false"
+    />
+
+    <RoundTransition
+      :open="transition.open"
+      :kind="transition.kind"
+      :round-number="transition.roundNumber"
+      :target="transition.target"
+      :total-rounds="session.rounds"
     />
   </section>
 </template>

@@ -1,27 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { BodyText, BottomSheet, Eyebrow, RouteDart, SegmentGroup } from '@/design-system'
+import { BodyText, BottomSheet, Eyebrow, RouteDart } from '@/design-system'
 import { route as routeFor } from '@/game/CheckoutEngine'
 import { toLabel } from '@/game/DartNotation'
 
+// Enter a remaining score, get the best checkout shown. No dart-count
+// field — the route from the chart is always the shortest finish.
 interface Props {
   open: boolean
-  maxDarts?: number
 }
 
-const props = withDefaults(defineProps<Props>(), { maxDarts: 9 })
+const props = defineProps<Props>()
 
 defineEmits<{ close: [] }>()
 
 const remainingInput = ref('')
-const dartsAlready = ref<number>(0)
 
 watch(
   () => props.open,
   (open) => {
     if (!open) return
     remainingInput.value = ''
-    dartsAlready.value = 0
   },
 )
 
@@ -45,11 +44,6 @@ const helperLabel = computed(() => {
   return null
 })
 
-const dartsAlreadyOptions = computed(() => {
-  const max = Math.min(props.maxDarts - 1, 6)
-  return Array.from({ length: max + 1 }, (_, i) => i)
-})
-
 function onRemInput(ev: Event) {
   const el = ev.target as HTMLInputElement
   remainingInput.value = el.value.replace(/[^0-9]/g, '').slice(0, 3)
@@ -63,7 +57,7 @@ function onRemInput(ev: Event) {
       <button class="helper__x" type="button" @click="$emit('close')">✕</button>
     </div>
     <BodyText style="font-size: 13px; margin-bottom: 14px">
-      Enter your current score and how many darts you've thrown — we'll show the best route.
+      Enter your remaining score — we'll show the shortest finish.
     </BodyText>
 
     <div class="helper__sublabel">Remaining score</div>
@@ -78,9 +72,6 @@ function onRemInput(ev: Event) {
       autofocus
       @input="onRemInput"
     />
-
-    <div class="helper__sublabel helper__sublabel--gap">Darts thrown this round</div>
-    <SegmentGroup v-model="dartsAlready" :options="dartsAlreadyOptions" />
 
     <div class="helper__result">
       <Eyebrow style="margin-bottom: 8px; color: var(--ds-green)">Suggested route</Eyebrow>
@@ -97,7 +88,6 @@ function onRemInput(ev: Event) {
           Finish in {{ helperRoute.darts.length }} dart{{
             helperRoute.darts.length === 1 ? '' : 's'
           }}
-          <template v-if="dartsAlready > 0"> · {{ dartsAlready }} already thrown</template>
         </div>
       </div>
     </div>
@@ -129,10 +119,6 @@ function onRemInput(ev: Event) {
   text-transform: uppercase;
   color: var(--ds-dim);
   margin-bottom: 6px;
-}
-
-.helper__sublabel--gap {
-  margin-top: 12px;
 }
 
 .helper__input {

@@ -24,7 +24,11 @@ const targetLabel = computed(() => {
   return t === 'Bull' ? 'Bull' : String(t)
 })
 
+const isBullTarget = computed(() => session.currentTarget === 'Bull')
+
 const progressLabel = computed(() => `${session.targetIndex + 1} / ${BARNEYS_TARGETS.length}`)
+
+const dartsThisTarget = computed(() => session.currentHits.length)
 
 watch(
   () => session.confettiTrigger,
@@ -117,25 +121,48 @@ function quitProgressLabel(): string {
       <Eyebrow>Hit</Eyebrow>
       <div class="live__target-big">{{ targetLabel }}</div>
       <BodyText style="margin-top: 6px; font-size: 14px">
-        Three darts — tap what lands.
+        Dart {{ dartsThisTarget + 1 }} of 3 — tap what lands.
       </BodyText>
+      <div class="live__dots" aria-hidden="true">
+        <span
+          v-for="i in 3"
+          :key="i"
+          class="live__dot"
+          :class="{ 'live__dot--on': i <= dartsThisTarget }"
+        />
+      </div>
     </div>
 
-    <div class="live__grid">
+    <div v-if="!isBullTarget" class="live__grid">
       <button type="button" class="live__hit live__hit--miss" @click="record('miss')">
         <span class="live__hit-label">Miss</span>
         <span class="live__hit-pts">0</span>
       </button>
       <button type="button" class="live__hit" @click="record('single')">
-        <span class="live__hit-label">Single</span>
+        <span class="live__hit-label">Single {{ session.currentTarget }}</span>
         <span class="live__hit-pts">1</span>
       </button>
       <button type="button" class="live__hit live__hit--green" @click="record('double')">
-        <span class="live__hit-label">Double</span>
+        <span class="live__hit-label">Double {{ session.currentTarget }}</span>
         <span class="live__hit-pts">2</span>
       </button>
       <button type="button" class="live__hit live__hit--red" @click="record('treble')">
-        <span class="live__hit-label">Treble</span>
+        <span class="live__hit-label">Treble {{ session.currentTarget }}</span>
+        <span class="live__hit-pts">3</span>
+      </button>
+    </div>
+
+    <div v-else class="live__grid live__grid--bull">
+      <button type="button" class="live__hit live__hit--miss" @click="record('miss')">
+        <span class="live__hit-label">Miss</span>
+        <span class="live__hit-pts">0</span>
+      </button>
+      <button type="button" class="live__hit live__hit--green" @click="record('double')">
+        <span class="live__hit-label">Outer Bull</span>
+        <span class="live__hit-pts">2</span>
+      </button>
+      <button type="button" class="live__hit live__hit--red" @click="record('treble')">
+        <span class="live__hit-label">Bullseye</span>
         <span class="live__hit-pts">3</span>
       </button>
     </div>
@@ -200,6 +227,30 @@ function quitProgressLabel(): string {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.live__grid--bull {
+  grid-template-columns: 1fr;
+}
+
+.live__dots {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.live__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(244, 236, 224, 0.1);
+  transition: background 0.15s;
+}
+
+.live__dot--on {
+  background: var(--ds-brass);
+  box-shadow: 0 0 8px rgba(217, 165, 74, 0.55);
 }
 
 .live__hit {

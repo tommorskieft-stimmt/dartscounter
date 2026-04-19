@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Eyebrow, SegmentGroup } from '@/design-system'
+import CheckoutConfirmDialog from '@/features/play/components/CheckoutConfirmDialog.vue'
 import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.vue'
 import CheckoutRouteCard from '@/features/play/components/CheckoutRouteCard.vue'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
@@ -26,7 +26,7 @@ const session = useStandardCheckoutStore()
 const helperOpen = ref(false)
 const quitDialogOpen = ref(false)
 const showConfetti = ref(false)
-const finishAsDouble = ref<'yes' | 'no'>('yes')
+const checkout = ref<{ open: boolean; score: number }>({ open: false, score: 0 })
 let confettiTimer: number | undefined
 
 onMounted(() => {
@@ -95,12 +95,26 @@ async function finishMatch(completed: boolean) {
 }
 
 function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
-  const result = session.submit(
-    payload.scoreThrown,
-    payload.dartsThrown,
-    finishAsDouble.value === 'yes',
-  )
-  if (result.kind === 'turnRecorded' || result.kind === 'legFinished') haptic('light')
+  const tentative = session.remaining - payload.scoreThrown
+
+  // Let the store handle bust cases (< 0 or == 1) with 3-dart assumption.
+  // For a clean checkout attempt (tentative === 0), open the dialog so
+  // the user can specify how the finishing turn actually went.
+  if (tentative === 0) {
+    checkout.value = { open: true, score: payload.scoreThrown }
+    return
+  }
+  const result = session.submit(payload.scoreThrown, 3, false)
+  if (result.kind === 'turnRecorded') haptic('light')
+}
+
+function handleCheckoutConfirm(payload: { darts: 1 | 2 | 3; doubles: 0 | 1 | 2 | 3 }) {
+  const score = checkout.value.score
+  checkout.value.open = false
+  const finishesOnDouble = payload.doubles > 0
+  const result = session.submit(score, payload.darts, finishesOnDouble)
+  if (result.kind === 'legFinished' || result.kind === 'matchFinished') haptic('success')
+  else if (result.kind === 'bust') haptic('error')
 }
 
 function handleUndo() {
@@ -171,20 +185,24 @@ function quitProgressLabel(): string {
 
     <CheckoutRouteCard :route="session.currentRoute" style="margin-bottom: 14px" />
 
-    <div class="live__double">
-      <Eyebrow style="margin-bottom: 8px">Last dart was a double?</Eyebrow>
-      <SegmentGroup v-model="finishAsDouble" :options="['yes', 'no']" />
-      <p class="live__hint">
-        Flip to "yes" on the turn that finishes the leg. The double-out rule applies only on the
-        final dart — all other turns keep "no".
-      </p>
-    </div>
-
-    <TurnInputCard :darts-available="3" style="margin-bottom: 14px" @submit="handleSubmit" />
+    <TurnInputCard
+      :darts-available="3"
+      :show-darts-selector="false"
+      eyebrow="Score this turn"
+      style="margin-bottom: 14px"
+      @submit="handleSubmit"
+    />
 
     <TurnLogList :turns="session.turns" eyebrow="This Leg" />
 
-    <CheckoutHelperSheet :open="helperOpen" :max-darts="3" @close="helperOpen = false" />
+    <CheckoutHelperSheet :open="helperOpen" @close="helperOpen = false" />
+
+    <CheckoutConfirmDialog
+      :open="checkout.open"
+      :score="checkout.score"
+      @confirm="handleCheckoutConfirm"
+      @cancel="checkout.open = false"
+    />
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
@@ -203,22 +221,5 @@ function quitProgressLabel(): string {
   min-height: 100%;
   max-width: 480px;
   margin: 0 auto;
-}
-
-.live__double {
-  background: var(--ds-bg-2);
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-lg);
-  padding: 12px 14px;
-  margin-bottom: 14px;
-}
-
-.live__hint {
-  margin: 8px 0 0;
-  font-family: var(--ds-font-mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--ds-dim);
-  text-transform: uppercase;
 }
 </style>
