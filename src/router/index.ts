@@ -43,8 +43,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/stats',
     name: 'stats',
-    component: () => import('@/views/ComingSoon.vue'),
-    props: { phase: 'Phase 07', feature: 'Statistics' },
+    component: () => import('@/views/Stats.vue'),
   },
   {
     path: '/gallery',
