@@ -35,7 +35,7 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
       </Heading>
       <BodyText style="margin-top: 8px; font-size: 17px">Ready to practice?</BodyText>
 
-      <div style="margin-top: 20px">
+      <div class="home__rec">
         <RecommendationCard />
       </div>
 
@@ -61,9 +61,11 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
   position: relative;
   overflow: hidden;
   padding: 72px var(--ds-edge-padding) 40px;
-  min-height: 100%;
+  min-height: 100dvh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .home__glow {
@@ -71,8 +73,8 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
   top: -100px;
   left: 50%;
   transform: translateX(-50%);
-  width: 460px;
-  height: 460px;
+  width: min(460px, 90vw);
+  height: min(460px, 90vw);
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
@@ -91,6 +93,13 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
   flex: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.home__rec {
+  margin-top: 24px;
 }
 
 .home__bullseye {
@@ -98,6 +107,8 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 180px;
+  padding: 24px 0;
 }
 
 .home__actions {
@@ -113,11 +124,27 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
 
 .home__teaser {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
   font-family: var(--ds-font-mono);
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--ds-muted);
+}
+
+@media (min-width: 768px) {
+  .home {
+    padding: 48px var(--ds-edge-padding) 48px;
+    justify-content: center;
+  }
+
+  .home__content {
+    flex: none;
+  }
+
+  .home__bullseye {
+    min-height: 220px;
+    padding: 32px 0;
+  }
 }
 </style>

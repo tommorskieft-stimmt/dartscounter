@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { BodyText, ConfettiBurst, Eyebrow, PrimaryButton, SecondaryButton } from '@/design-system'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
+import QuitConfirmDialog from '@/features/play/components/QuitConfirmDialog.vue'
 import { persistBarneysMatch } from '@/features/play/persistence'
 import { BARNEYS_TARGETS, useBarneysStore, type BarneysHit } from '@/stores/barneys'
 import { haptic } from '@/services/haptics'
@@ -10,6 +11,7 @@ import { haptic } from '@/services/haptics'
 const router = useRouter()
 const session = useBarneysStore()
 const showConfetti = ref(false)
+const quitDialogOpen = ref(false)
 let confettiTimer: number | undefined
 
 onMounted(() => {
@@ -68,13 +70,33 @@ function handleUndo() {
   if (session.undo()) haptic('soft')
 }
 
-async function handleQuit() {
-  const result = session.quit()
-  if (result.perTargetHits.length === 0) {
-    await router.replace({ name: 'home' })
+function hasProgress(): boolean {
+  return session.pastRounds.length > 0 || session.currentHits.length > 0
+}
+
+function handleQuit() {
+  if (!hasProgress()) {
+    session.quit()
+    void router.replace({ name: 'home' })
     return
   }
+  quitDialogOpen.value = true
+}
+
+async function confirmSaveAndExit() {
+  quitDialogOpen.value = false
+  session.quit()
   await finishMatch()
+}
+
+async function confirmDiscardAndExit() {
+  quitDialogOpen.value = false
+  session.quit()
+  await router.replace({ name: 'home' })
+}
+
+function quitProgressLabel(): string {
+  return `${session.pastRounds.length} target${session.pastRounds.length === 1 ? '' : 's'} · ${session.totalScore} pts`
 }
 </script>
 
@@ -133,14 +155,24 @@ async function handleQuit() {
       <SecondaryButton @click="handleUndo">Undo</SecondaryButton>
       <PrimaryButton @click="handleQuit">Finish</PrimaryButton>
     </div>
+
+    <QuitConfirmDialog
+      :open="quitDialogOpen"
+      :progress-label="quitProgressLabel()"
+      @save="confirmSaveAndExit"
+      @discard="confirmDiscardAndExit"
+      @cancel="quitDialogOpen = false"
+    />
   </section>
 </template>
 
 <style scoped>
 .live {
-  padding: 56px 20px 24px;
+  padding: 56px 20px 40px;
   box-sizing: border-box;
   min-height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .live__target {

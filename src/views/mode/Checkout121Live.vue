@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.vue'
 import CheckoutRouteCard from '@/features/play/components/CheckoutRouteCard.vue'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
+import QuitConfirmDialog from '@/features/play/components/QuitConfirmDialog.vue'
 import ScoreboardCard from '@/features/play/components/ScoreboardCard.vue'
 import TurnInputCard from '@/features/play/components/TurnInputCard.vue'
 import TurnLogList from '@/features/play/components/TurnLogList.vue'
@@ -21,6 +22,7 @@ const props = defineProps<Props>()
 const router = useRouter()
 const session = useCheckout121Store()
 const helperOpen = ref(false)
+const quitDialogOpen = ref(false)
 const showConfetti = ref(false)
 let confettiTimer: number | undefined
 
@@ -95,12 +97,19 @@ function handleUndo() {
   if (session.undo()) haptic('soft')
 }
 
-async function handleQuit() {
-  const history = session.quit()
-  if (history.length === 0) {
-    await router.replace({ name: 'home' })
+function handleQuit() {
+  if (session.history.length === 0) {
+    // Nothing worth saving or asking about — bounce home.
+    session.quit()
+    void router.replace({ name: 'home' })
     return
   }
+  quitDialogOpen.value = true
+}
+
+async function confirmSaveAndExit() {
+  quitDialogOpen.value = false
+  const history = session.quit()
   const matchId = await persist121Match({
     history,
     finalTarget: session.finalTarget,
@@ -112,6 +121,12 @@ async function handleQuit() {
   } else {
     await router.replace({ name: 'home' })
   }
+}
+
+async function confirmDiscardAndExit() {
+  quitDialogOpen.value = false
+  session.quit()
+  await router.replace({ name: 'home' })
 }
 </script>
 
@@ -159,13 +174,23 @@ async function handleQuit() {
       :max-darts="session.maxDarts"
       @close="helperOpen = false"
     />
+
+    <QuitConfirmDialog
+      :open="quitDialogOpen"
+      :progress-label="`${session.history.length} round${session.history.length === 1 ? '' : 's'} completed`"
+      @save="confirmSaveAndExit"
+      @discard="confirmDiscardAndExit"
+      @cancel="quitDialogOpen = false"
+    />
   </section>
 </template>
 
 <style scoped>
 .live {
-  padding: 56px 20px 24px;
+  padding: 56px 20px 40px;
   box-sizing: border-box;
   min-height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 </style>

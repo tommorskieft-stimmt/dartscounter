@@ -25,12 +25,8 @@ onMounted(async () => {
   loading.value = false
 })
 
-const TAB_LABELS: Record<Tab, string> = {
-  overall: 'Overall',
-  checkout121: '121',
-  standardCheckout: '501',
-  barneys: "Barney's",
-}
+const TAB_OPTIONS: Tab[] = ['overall', 'checkout121', 'standardCheckout', 'barneys']
+const TAB_LABELS: string[] = ['Overall', '121', '501', "Barney's"]
 </script>
 
 <template>
@@ -44,15 +40,7 @@ const TAB_LABELS: Record<Tab, string> = {
     </BodyText>
 
     <div class="stats__tabs">
-      <SegmentGroup
-        v-model="tab"
-        :options="['overall', 'checkout121', 'standardCheckout', 'barneys']"
-      />
-      <div class="stats__tab-labels">
-        <span v-for="t in (['overall', 'checkout121', 'standardCheckout', 'barneys'] as Tab[])" :key="t">
-          {{ TAB_LABELS[t] }}
-        </span>
-      </div>
+      <SegmentGroup v-model="tab" :options="TAB_OPTIONS" :labels="TAB_LABELS" />
     </div>
 
     <div v-if="loading" class="stats__loading">Loading stats…</div>
