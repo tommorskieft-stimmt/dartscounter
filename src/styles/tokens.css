@@ -1,0 +1,53 @@
+/*
+ * Design tokens — ported verbatim from the Claude Design prototype
+ * (design/reference/project/lib/ui.jsx) and cross-checked against the
+ * iOS DesignSystem/Tokens.swift. Do not hardcode colours or sizes in
+ * feature code; consume these tokens instead.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Palette — pub / cafe */
+  --ds-bg: #14100d;
+  --ds-bg-2: #1d1814;
+  --ds-bg-3: #26201b;
+  --ds-text: #f4ece0;
+  --ds-muted: rgba(244, 236, 224, 0.6);
+  --ds-dim: rgba(244, 236, 224, 0.35);
+
+  --ds-accent: oklch(0.62 0.22 25);
+  --ds-accent-dim: oklch(0.48 0.18 25);
+  --ds-accent-glow: oklch(0.62 0.22 25 / 0.35);
+
+  --ds-green: oklch(0.62 0.14 155);
+  --ds-green-dim: oklch(0.48 0.12 155);
+  --ds-green-glow: oklch(0.62 0.14 155 / 0.3);
+
+  --ds-brass: oklch(0.75 0.12 75);
+
+  --ds-border: rgba(220, 190, 160, 0.09);
+  --ds-border-2: rgba(220, 190, 160, 0.18);
+
+  --ds-app-bg: radial-gradient(ellipse at top, #2a1a12 0%, #150e09 45%, #080503 100%);
+
+  /* Typography */
+  --ds-font-display: 'Archivo', -apple-system, system-ui, sans-serif;
+  --ds-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+
+  /* Sizing */
+  --ds-button-h: 56px;
+  --ds-button-sm-h: 44px;
+  --ds-button-xs-h: 36px;
+  --ds-input-h: 52px;
+  --ds-input-lg-h: 56px;
+
+  /* Radii */
+  --ds-radius-sm: 9px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 14px;
+  --ds-radius-xl: 18px;
+  --ds-radius-sheet: 24px;
+
+  /* Spacing */
+  --ds-edge-padding: 24px;
+}

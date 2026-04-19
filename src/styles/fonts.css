@@ -1,0 +1,7 @@
+/*
+ * Font face declarations — phase 00 stubs the Google Fonts source so
+ * the scaffold renders with the right families. Phase 01 replaces these
+ * with self-hosted OFL TTFs copied from the iOS project's
+ * Resources/Fonts/ directory.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
