@@ -1,22 +1,74 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useProfileStore } from '@/stores/profile'
 
-// Phase 01 adds the dev-only /gallery route so every DS component can be
-// inspected in isolation. Real routes (onboarding, home, play, etc.)
-// arrive in phase 02+.
+// Route inventory is seeded through phases 02–07. Every route is defined
+// here; ones whose screens land later point at ComingSoon.
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
-    component: () => import('@/views/Placeholder.vue'),
+    component: () => import('@/views/Home.vue'),
+  },
+  {
+    path: '/onboarding',
+    name: 'onboarding',
+    component: () => import('@/views/Onboarding.vue'),
+    meta: { allowUnboarded: true },
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/Profile.vue'),
+  },
+  {
+    path: '/profile/acknowledgements',
+    name: 'acknowledgements',
+    component: () => import('@/views/Acknowledgements.vue'),
+  },
+  {
+    path: '/play/setup',
+    name: 'play-setup',
+    component: () => import('@/views/ComingSoon.vue'),
+    props: { phase: 'Phase 05', feature: 'Game setup' },
+  },
+  {
+    path: '/play/live',
+    name: 'play-live',
+    component: () => import('@/views/ComingSoon.vue'),
+    props: { phase: 'Phase 05', feature: 'Live gameplay' },
+  },
+  {
+    path: '/stats',
+    name: 'stats',
+    component: () => import('@/views/ComingSoon.vue'),
+    props: { phase: 'Phase 07', feature: 'Statistics' },
   },
   {
     path: '/gallery',
     name: 'gallery',
     component: () => import('@/views/Gallery.vue'),
+    meta: { allowUnboarded: true },
   },
 ]
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+// Gate every non-onboarding route behind profile existence. The profile
+// store loads on app mount (main.ts); if it hasn't settled yet we wait.
+router.beforeEach(async (to) => {
+  const profileStore = useProfileStore()
+  if (!profileStore.loaded) {
+    await profileStore.load()
+  }
+  const allow = to.meta.allowUnboarded === true
+  if (!profileStore.isOnboarded && !allow) {
+    return { name: 'onboarding' }
+  }
+  if (profileStore.isOnboarded && to.name === 'onboarding') {
+    return { name: 'home' }
+  }
+  return true
 })
