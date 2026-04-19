@@ -53,7 +53,8 @@ function labelFor(index: number, opt: Value, labels: string[] | undefined): stri
 }
 
 .segments__btn {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   height: var(--ds-button-sm-h);
   border: none;
   border-radius: var(--ds-radius-sm);
@@ -65,6 +66,15 @@ function labelFor(index: number, opt: Value, labels: string[] | undefined): stri
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+@media (max-width: 380px) {
+  .segments__btn {
+    font-size: 12px;
+  }
 }
 
 .segments__btn--selected {

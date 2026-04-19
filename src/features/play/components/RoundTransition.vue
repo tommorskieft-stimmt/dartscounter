@@ -49,9 +49,7 @@ withDefaults(defineProps<Props>(), { totalRounds: null })
   position: fixed;
   inset: 0;
   z-index: 250;
-  background: rgba(20, 16, 13, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(10, 8, 6, 0.86);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,9 +117,7 @@ withDefaults(defineProps<Props>(), { totalRounds: null })
 
 .round-enter-active,
 .round-leave-active {
-  transition:
-    opacity 0.25s ease,
-    backdrop-filter 0.25s ease;
+  transition: opacity 0.25s ease;
 }
 
 .round-enter-active .round__panel,

@@ -130,13 +130,24 @@ function handleUndo() {
   if (session.undo()) haptic('soft')
 }
 
+function hasProgress(): boolean {
+  return session.history.length > 0 || session.currentTurns.length > 0
+}
+
 function handleQuit() {
-  if (session.history.length === 0) {
+  if (!hasProgress()) {
     session.quit()
     void router.replace({ name: 'home' })
     return
   }
   quitDialogOpen.value = true
+}
+
+function quitProgressLabel(): string {
+  const rounds = session.history.length
+  const turns = session.currentTurns.length
+  if (rounds > 0) return `${rounds} round${rounds === 1 ? '' : 's'} completed`
+  return `${turns} turn${turns === 1 ? '' : 's'} this round`
 }
 
 async function confirmSaveAndExit() {
@@ -199,7 +210,7 @@ async function confirmDiscardAndExit() {
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
-      :progress-label="`${session.history.length} round${session.history.length === 1 ? '' : 's'} completed`"
+      :progress-label="quitProgressLabel()"
       @save="confirmSaveAndExit"
       @discard="confirmDiscardAndExit"
       @cancel="quitDialogOpen = false"

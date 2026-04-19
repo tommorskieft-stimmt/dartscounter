@@ -48,14 +48,12 @@ defineEmits<{
 .quit-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(10, 8, 6, 0.82);
   z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .quit-card {
@@ -66,6 +64,10 @@ defineEmits<{
   border-radius: var(--ds-radius-xl);
   padding: 24px 24px 22px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  max-height: calc(100dvh - 48px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .quit-card__row {
