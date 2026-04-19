@@ -48,6 +48,8 @@ export default [
       'vue/singleline-html-element-content-newline': 'off',
       'vue/html-self-closing': 'off',
       'vue/max-attributes-per-line': 'off',
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-indent': 'off',
       // Refs bound via v-model or event handlers look "unused" to this rule;
       // Vue's template usage is opaque to ESLint.
       'no-useless-assignment': 'off',
