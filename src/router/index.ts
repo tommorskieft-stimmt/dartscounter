@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useProfileStore } from '@/stores/profile'
 
-// Route inventory is seeded through phases 02–07. Every route is defined
-// here; ones whose screens land later point at ComingSoon.
+// Route inventory is seeded across phases 02–07. Every route is defined
+// up front; screens that land later still resolve via a ComingSoon stub.
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -28,14 +28,18 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/play/setup',
     name: 'play-setup',
-    component: () => import('@/views/ComingSoon.vue'),
-    props: { phase: 'Phase 05', feature: 'Game setup' },
+    component: () => import('@/views/PlaySetup.vue'),
   },
   {
     path: '/play/live',
     name: 'play-live',
+    component: () => import('@/views/PlayLive.vue'),
+  },
+  {
+    path: '/play/over',
+    name: 'play-over',
     component: () => import('@/views/ComingSoon.vue'),
-    props: { phase: 'Phase 05', feature: 'Live gameplay' },
+    props: { phase: 'Phase 06', feature: 'Game over' },
   },
   {
     path: '/stats',
@@ -57,7 +61,7 @@ export const router = createRouter({
 })
 
 // Gate every non-onboarding route behind profile existence. The profile
-// store loads on app mount (main.ts); if it hasn't settled yet we wait.
+// store loads here on first navigation.
 router.beforeEach(async (to) => {
   const profileStore = useProfileStore()
   if (!profileStore.loaded) {
