@@ -26,3 +26,73 @@ export interface Profile {
 export type ProfileDraft = Omit<Profile, 'id' | 'createdAt' | 'soundsEnabled'> & {
   soundsEnabled?: boolean
 }
+
+// -----------------------------------------------------------------------
+// Matches
+// -----------------------------------------------------------------------
+
+export type GameType = 'checkout121' | 'standardCheckout' | 'barneys'
+
+export type StandardStartScore = 501 | 301 | 201 | 101
+
+export interface Match {
+  /** Auto-incremented by Dexie. */
+  id?: number
+  playedAt: number
+  gameType: GameType
+
+  // ---- 121 Checkout fields ----
+  finalTarget?: number
+  maxDarts?: number
+  /** null-ish stored as undefined; Infinity not serialisable. */
+  rounds?: number
+
+  // ---- Standard Checkout fields ----
+  startScore?: StandardStartScore
+  legsTarget?: number
+  legsWon?: number
+  finishedInDarts?: number
+  threeDartAverage?: number
+
+  // ---- Barney's Drill fields ----
+  barneysScore?: number
+  barneysMaxHits?: number[]
+}
+
+export interface Round {
+  id?: number
+  matchId: number
+  roundNumber: number
+  target: number
+  success: boolean
+  dartsUsed: number
+}
+
+/** Optional per-dart breakdown — enables the segment heatmap (phase 07+). */
+export interface DartDetail {
+  /** 1..20 or 25 (single bull). */
+  value: number
+  /** 1 single, 2 double, 3 treble. */
+  multiplier: 1 | 2 | 3
+}
+
+export interface Turn {
+  id?: number
+  roundId: number
+  turnNumber: number
+  dartsThrown: 1 | 2 | 3
+  scoreThrown: number
+  remainingAfter: number
+  isBust: boolean
+  dartsDetail?: DartDetail[]
+}
+
+// -----------------------------------------------------------------------
+// Computed, non-persisted shapes used by the Stats screen
+// -----------------------------------------------------------------------
+
+export interface MatchDetail {
+  match: Match
+  rounds: Round[]
+  turns: Turn[]
+}
