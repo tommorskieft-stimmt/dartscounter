@@ -78,7 +78,7 @@ function onScoreInput(ev: Event) {
 
 <template>
   <div class="turn-input">
-    <Eyebrow style="margin-bottom: 10px">{{ eyebrow }}</Eyebrow>
+    <Eyebrow v-if="eyebrow" style="margin-bottom: 10px">{{ eyebrow }}</Eyebrow>
 
     <template v-if="showDartsSelector">
       <div class="turn-input__sublabel">Darts Thrown</div>
@@ -92,10 +92,6 @@ function onScoreInput(ev: Event) {
         Score Thrown <span class="turn-input__hint">(max {{ maxScore }})</span>
       </div>
     </template>
-
-    <div v-else class="turn-input__sublabel">
-      Score this turn <span class="turn-input__hint">(max 180)</span>
-    </div>
 
     <input
       class="turn-input__score"

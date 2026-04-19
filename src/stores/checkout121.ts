@@ -62,7 +62,8 @@ export const useCheckout121Store = defineStore('checkout121', () => {
       dartsUsed.value += dartsThrown
       if (dartsUsed.value >= maxDarts.value) {
         failRound()
-        return { kind: 'roundFailed' }
+        const finished = (status.value as SessionStatus).kind === 'finished'
+        return finished ? { kind: 'matchFinished' } : { kind: 'roundFailed' }
       }
       status.value = { kind: 'bust', message: `Bust — score stays at ${remaining.value}` }
       return { kind: 'bust' }
@@ -100,7 +101,8 @@ export const useCheckout121Store = defineStore('checkout121', () => {
 
     if (dartsUsed.value >= maxDarts.value) {
       failRound()
-      return { kind: 'roundFailed' }
+      const finished = (status.value as SessionStatus).kind === 'finished'
+      return finished ? { kind: 'matchFinished' } : { kind: 'roundFailed' }
     }
     return { kind: 'turnRecorded' }
   }

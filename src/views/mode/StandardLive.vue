@@ -68,16 +68,16 @@ watch(
   },
 )
 
+// Haptics only — persistence is explicit so Discard actually discards.
 watch(
   () => session.status,
-  async (st) => {
+  (st) => {
     if (st.kind === 'bust') haptic('error')
-    if (st.kind === 'finished') await finishMatch(true)
   },
   { deep: true },
 )
 
-async function finishMatch(completed: boolean) {
+async function saveAndGoToOver(completed: boolean) {
   const matchId = await persistStandardMatch({
     startScore: session.startScore,
     legsTarget: session.legsTarget,
@@ -94,27 +94,29 @@ async function finishMatch(completed: boolean) {
   }
 }
 
-function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
+async function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
   const tentative = session.remaining - payload.scoreThrown
 
-  // Let the store handle bust cases (< 0 or == 1) with 3-dart assumption.
-  // For a clean checkout attempt (tentative === 0), open the dialog so
-  // the user can specify how the finishing turn actually went.
   if (tentative === 0) {
     checkout.value = { open: true, score: payload.scoreThrown }
     return
   }
   const result = session.submit(payload.scoreThrown, 3, false)
   if (result.kind === 'turnRecorded') haptic('light')
+  if (result.kind === 'matchFinished') await saveAndGoToOver(true)
 }
 
-function handleCheckoutConfirm(payload: { darts: 1 | 2 | 3; doubles: 0 | 1 | 2 | 3 }) {
+async function handleCheckoutConfirm(payload: { darts: 1 | 2 | 3; doubles: 0 | 1 | 2 | 3 }) {
   const score = checkout.value.score
   checkout.value.open = false
   const finishesOnDouble = payload.doubles > 0
   const result = session.submit(score, payload.darts, finishesOnDouble)
-  if (result.kind === 'legFinished' || result.kind === 'matchFinished') haptic('success')
-  else if (result.kind === 'bust') haptic('error')
+  if (result.kind === 'legFinished') haptic('success')
+  if (result.kind === 'matchFinished') {
+    haptic('success')
+    await saveAndGoToOver(true)
+  }
+  if (result.kind === 'bust') haptic('error')
 }
 
 function handleUndo() {
@@ -137,7 +139,7 @@ function handleQuit() {
 async function confirmSaveAndExit() {
   quitDialogOpen.value = false
   session.quit()
-  await finishMatch(session.legsWon >= (session.legsTarget ?? 1))
+  await saveAndGoToOver(session.legsWon >= (session.legsTarget ?? 1))
 }
 
 async function confirmDiscardAndExit() {
@@ -188,14 +190,18 @@ function quitProgressLabel(): string {
     <TurnInputCard
       :darts-available="3"
       :show-darts-selector="false"
-      eyebrow="Score this turn"
+      eyebrow=""
       style="margin-bottom: 14px"
       @submit="handleSubmit"
     />
 
     <TurnLogList :turns="session.turns" eyebrow="This Leg" />
 
-    <CheckoutHelperSheet :open="helperOpen" @close="helperOpen = false" />
+    <CheckoutHelperSheet
+      :open="helperOpen"
+      :current-remaining="session.remaining"
+      @close="helperOpen = false"
+    />
 
     <CheckoutConfirmDialog
       :open="checkout.open"

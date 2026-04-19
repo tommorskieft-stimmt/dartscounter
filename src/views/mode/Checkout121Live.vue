@@ -73,28 +73,18 @@ watch(
   },
 )
 
+// Only haptics live here. Persistence is explicit so Discard actually
+// discards (the previous status-watcher pattern auto-saved on any
+// 'finished' state — including user-initiated discards).
 watch(
   () => session.status,
-  async (st) => {
+  (st) => {
     if (st.kind === 'bust') haptic('error')
-    if (st.kind === 'finished') {
-      const matchId = await persist121Match({
-        history: session.history,
-        finalTarget: session.finalTarget,
-        maxDarts: session.maxDarts,
-        rounds: session.rounds,
-      })
-      if (matchId !== null) {
-        await router.replace({ name: 'play-over', query: { id: matchId } })
-      } else {
-        await router.replace({ name: 'home' })
-      }
-    }
   },
   { deep: true },
 )
 
-function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
+async function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) {
   const result = session.submit(payload.scoreThrown, payload.dartsThrown)
   if (result.kind === 'turnRecorded') haptic('light')
   if (result.kind === 'roundCompleted') {
@@ -103,11 +93,12 @@ function handleSubmit(payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }) 
   } else if (result.kind === 'roundFailed') {
     haptic('error')
     showRoundTransition('fail')
+  } else if (result.kind === 'matchFinished') {
+    await saveAndGoToOver()
   }
 }
 
 function showRoundTransition(kind: 'success' | 'fail') {
-  // Read the just-entered state (session has already advanced).
   if (session.status.kind === 'finished') return
   transition.value = {
     open: true,
@@ -121,25 +112,9 @@ function showRoundTransition(kind: 'success' | 'fail') {
   }, 1400)
 }
 
-function handleUndo() {
-  if (session.undo()) haptic('soft')
-}
-
-function handleQuit() {
-  if (session.history.length === 0) {
-    // Nothing worth saving or asking about — bounce home.
-    session.quit()
-    void router.replace({ name: 'home' })
-    return
-  }
-  quitDialogOpen.value = true
-}
-
-async function confirmSaveAndExit() {
-  quitDialogOpen.value = false
-  const history = session.quit()
+async function saveAndGoToOver() {
   const matchId = await persist121Match({
-    history,
+    history: session.history,
     finalTarget: session.finalTarget,
     maxDarts: session.maxDarts,
     rounds: session.rounds,
@@ -149,6 +124,25 @@ async function confirmSaveAndExit() {
   } else {
     await router.replace({ name: 'home' })
   }
+}
+
+function handleUndo() {
+  if (session.undo()) haptic('soft')
+}
+
+function handleQuit() {
+  if (session.history.length === 0) {
+    session.quit()
+    void router.replace({ name: 'home' })
+    return
+  }
+  quitDialogOpen.value = true
+}
+
+async function confirmSaveAndExit() {
+  quitDialogOpen.value = false
+  session.quit()
+  await saveAndGoToOver()
 }
 
 async function confirmDiscardAndExit() {
@@ -197,7 +191,11 @@ async function confirmDiscardAndExit() {
 
     <TurnLogList :turns="session.currentTurns" />
 
-    <CheckoutHelperSheet :open="helperOpen" @close="helperOpen = false" />
+    <CheckoutHelperSheet
+      :open="helperOpen"
+      :current-remaining="session.remaining"
+      @close="helperOpen = false"
+    />
 
     <QuitConfirmDialog
       :open="quitDialogOpen"
