@@ -7,17 +7,26 @@ interface Props {
   modelValue: Value
   options: Value[]
   disabledValues?: Value[]
+  /**
+   * Optional display labels, one per option (same order as `options`).
+   * When omitted, the raw option value is rendered.
+   */
+  labels?: string[]
 }
 
-withDefaults(defineProps<Props>(), { disabledValues: () => [] })
+withDefaults(defineProps<Props>(), { disabledValues: () => [], labels: undefined })
 
 defineEmits<{ 'update:modelValue': [value: Value] }>()
+
+function labelFor(index: number, opt: Value, labels: string[] | undefined): string {
+  return labels?.[index] ?? String(opt)
+}
 </script>
 
 <template>
   <div class="segments">
     <button
-      v-for="opt in options"
+      v-for="(opt, i) in options"
       :key="String(opt)"
       :disabled="disabledValues.includes(opt)"
       class="segments__btn"
@@ -28,7 +37,7 @@ defineEmits<{ 'update:modelValue': [value: Value] }>()
       type="button"
       @click="!disabledValues.includes(opt) && $emit('update:modelValue', opt)"
     >
-      {{ opt }}
+      {{ labelFor(i, opt, labels) }}
     </button>
   </div>
 </template>
@@ -51,10 +60,11 @@ defineEmits<{ 'update:modelValue': [value: Value] }>()
   background: transparent;
   color: var(--ds-text);
   font-family: var(--ds-font-mono);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 
 .segments__btn--selected {

@@ -5,6 +5,7 @@ import { Eyebrow, SegmentGroup } from '@/design-system'
 import CheckoutHelperSheet from '@/features/play/components/CheckoutHelperSheet.vue'
 import CheckoutRouteCard from '@/features/play/components/CheckoutRouteCard.vue'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
+import QuitConfirmDialog from '@/features/play/components/QuitConfirmDialog.vue'
 import ScoreboardCard from '@/features/play/components/ScoreboardCard.vue'
 import TurnInputCard from '@/features/play/components/TurnInputCard.vue'
 import TurnLogList from '@/features/play/components/TurnLogList.vue'
@@ -23,6 +24,7 @@ const props = defineProps<Props>()
 const router = useRouter()
 const session = useStandardCheckoutStore()
 const helperOpen = ref(false)
+const quitDialogOpen = ref(false)
 const showConfetti = ref(false)
 const finishAsDouble = ref<'yes' | 'no'>('yes')
 let confettiTimer: number | undefined
@@ -105,9 +107,36 @@ function handleUndo() {
   if (session.undo()) haptic('soft')
 }
 
-async function handleQuit() {
+function hasProgress(): boolean {
+  return session.legsWon > 0 || session.turns.length > 0
+}
+
+function handleQuit() {
+  if (!hasProgress()) {
+    session.quit()
+    void router.replace({ name: 'home' })
+    return
+  }
+  quitDialogOpen.value = true
+}
+
+async function confirmSaveAndExit() {
+  quitDialogOpen.value = false
   session.quit()
   await finishMatch(session.legsWon >= (session.legsTarget ?? 1))
+}
+
+async function confirmDiscardAndExit() {
+  quitDialogOpen.value = false
+  session.quit()
+  await router.replace({ name: 'home' })
+}
+
+function quitProgressLabel(): string {
+  const legs = session.legsWon
+  const darts = session.dartsTotal
+  if (legs > 0) return `${legs} leg${legs === 1 ? '' : 's'} won · ${darts} darts`
+  return `${session.turns.length} turn${session.turns.length === 1 ? '' : 's'} · ${darts} darts`
 }
 </script>
 
@@ -156,14 +185,24 @@ async function handleQuit() {
     <TurnLogList :turns="session.turns" eyebrow="This Leg" />
 
     <CheckoutHelperSheet :open="helperOpen" :max-darts="3" @close="helperOpen = false" />
+
+    <QuitConfirmDialog
+      :open="quitDialogOpen"
+      :progress-label="quitProgressLabel()"
+      @save="confirmSaveAndExit"
+      @discard="confirmDiscardAndExit"
+      @cancel="quitDialogOpen = false"
+    />
   </section>
 </template>
 
 <style scoped>
 .live {
-  padding: 56px 20px 24px;
+  padding: 56px 20px 40px;
   box-sizing: border-box;
   min-height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .live__double {

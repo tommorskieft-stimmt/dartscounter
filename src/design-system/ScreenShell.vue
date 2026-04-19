@@ -27,6 +27,9 @@ withDefaults(defineProps<Props>(), { padding: '72px 24px 40px' })
   box-sizing: border-box;
   color: var(--ds-text);
   font-family: var(--ds-font-display);
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .screen__body {

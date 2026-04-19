@@ -45,9 +45,37 @@ input:focus-visible {
   outline: none;
 }
 
+/*
+ * Native date/time inputs have a minimum internal width that depends on
+ * the locale's formatted value + the picker indicator. Without an
+ * explicit `min-width: 0` the input refuses to shrink inside a flex or
+ * grid parent and overflows on narrow phones.
+ */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
   cursor: pointer;
+}
+
+/* Inputs nested inside flex / grid containers need this escape hatch so
+   they don't push past the parent on mobile Safari. */
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
