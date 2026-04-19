@@ -32,6 +32,8 @@ withDefaults(defineProps<Props>(), {
     <div
       v-if="statusText"
       class="scoreboard__status"
+      role="status"
+      aria-live="polite"
       :class="{
         'scoreboard__status--success': statusTone === 'success',
         'scoreboard__status--bust': statusTone === 'bust',
