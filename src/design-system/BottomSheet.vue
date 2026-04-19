@@ -41,7 +41,7 @@ defineEmits<{ close: [] }>()
 .sheet__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 6, 0.82);
+  background: var(--ds-backdrop-bg);
   z-index: 100;
   display: flex;
   align-items: flex-end;

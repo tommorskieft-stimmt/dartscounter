@@ -30,6 +30,10 @@
 
   --ds-app-bg: radial-gradient(ellipse at top, #2a1a12 0%, #150e09 45%, #080503 100%);
 
+  /* Modal / overlay backdrop. Plain solid rgba to avoid iOS Safari's
+     stacking-context quirks with `backdrop-filter`. */
+  --ds-backdrop-bg: rgba(10, 8, 6, 0.82);
+
   /* Typography */
   --ds-font-display: 'Archivo', -apple-system, system-ui, sans-serif;
   --ds-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
