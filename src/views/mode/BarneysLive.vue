@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { BodyText, ConfettiBurst, Eyebrow, PrimaryButton, SecondaryButton } from '@/design-system'
+import { Eyebrow, SecondaryButton } from '@/design-system'
+import BarneysScoreboardCard from '@/features/play/components/BarneysScoreboardCard.vue'
 import PlayTopBar from '@/features/play/components/PlayTopBar.vue'
 import QuitConfirmDialog from '@/features/play/components/QuitConfirmDialog.vue'
 import { persistBarneysMatch } from '@/features/play/persistence'
@@ -25,10 +26,14 @@ const targetLabel = computed(() => {
 })
 
 const isBullTarget = computed(() => session.currentTarget === 'Bull')
-
 const progressLabel = computed(() => `${session.targetIndex + 1} / ${BARNEYS_TARGETS.length}`)
 
-const dartsThisTarget = computed(() => session.currentHits.length)
+const statusText = computed(() => {
+  const n = session.currentHits.length
+  if (session.status.kind === 'finished') return 'Drill complete'
+  if (n === 0) return ''
+  return `Dart ${n} of 3`
+})
 
 watch(
   () => session.confettiTrigger,
@@ -43,15 +48,7 @@ watch(
   },
 )
 
-watch(
-  () => session.status,
-  async (st) => {
-    if (st.kind === 'finished') await finishMatch()
-  },
-  { deep: true },
-)
-
-async function finishMatch() {
+async function saveAndGoToOver() {
   const matchId = await persistBarneysMatch({
     totalScore: session.totalScore,
     perTargetHits: session.perTargetHits.map((hits) => hits.slice()),
@@ -63,11 +60,16 @@ async function finishMatch() {
   }
 }
 
-function record(hit: BarneysHit) {
+async function record(hit: BarneysHit) {
   const out = session.recordHit(hit)
   if (out.kind === 'invalid') return
+  if (out.kind === 'matchFinished') {
+    haptic('success')
+    await saveAndGoToOver()
+    return
+  }
   if (out.kind === 'roundCompleted') haptic('soft')
-  else if (out.kind !== 'matchFinished') haptic('light')
+  else haptic('light')
 }
 
 function handleUndo() {
@@ -90,7 +92,7 @@ function handleQuit() {
 async function confirmSaveAndExit() {
   quitDialogOpen.value = false
   session.quit()
-  await finishMatch()
+  await saveAndGoToOver()
 }
 
 async function confirmDiscardAndExit() {
@@ -101,6 +103,19 @@ async function confirmDiscardAndExit() {
 
 function quitProgressLabel(): string {
   return `${session.pastRounds.length} target${session.pastRounds.length === 1 ? '' : 's'} · ${session.totalScore} pts`
+}
+
+function hitLabel(kind: BarneysHit, targetIsBull: boolean): string {
+  if (targetIsBull) {
+    if (kind === 'miss') return 'Miss'
+    if (kind === 'double') return 'Outer Bull'
+    if (kind === 'treble') return 'Bullseye'
+    return 'Single'
+  }
+  if (kind === 'miss') return 'Miss'
+  if (kind === 'single') return `Single ${session.currentTarget}`
+  if (kind === 'double') return `Double ${session.currentTarget}`
+  return `Treble ${session.currentTarget}`
 }
 </script>
 
@@ -116,71 +131,65 @@ function quitProgressLabel(): string {
       @quit="handleQuit"
     />
 
-    <div class="live__target">
-      <ConfettiBurst :active="showConfetti" />
-      <Eyebrow>Hit</Eyebrow>
-      <div class="live__target-big">{{ targetLabel }}</div>
-      <BodyText style="margin-top: 6px; font-size: 14px">
-        Dart {{ dartsThisTarget + 1 }} of 3 — tap what lands.
-      </BodyText>
-      <div class="live__dots" aria-hidden="true">
-        <span
-          v-for="i in 3"
-          :key="i"
-          class="live__dot"
-          :class="{ 'live__dot--on': i <= dartsThisTarget }"
-        />
-      </div>
+    <BarneysScoreboardCard
+      :target="targetLabel"
+      :current-score="session.currentScore"
+      :total-score="session.totalScore"
+      :hits="session.currentHits"
+      :status-text="statusText"
+      :confetti="showConfetti"
+      style="margin-bottom: 10px"
+    />
+
+    <div class="live__undo-row">
+      <button
+        type="button"
+        class="live__undo"
+        :class="{ 'live__undo--disabled': !hasProgress() }"
+        :disabled="!hasProgress()"
+        @click="handleUndo"
+      >
+        <span class="live__undo-icon">↶</span> Undo
+      </button>
     </div>
 
+    <Eyebrow style="margin: 0 0 10px">Tap what landed</Eyebrow>
     <div v-if="!isBullTarget" class="live__grid">
       <button type="button" class="live__hit live__hit--miss" @click="record('miss')">
-        <span class="live__hit-label">Miss</span>
+        <span class="live__hit-label">{{ hitLabel('miss', false) }}</span>
         <span class="live__hit-pts">0</span>
       </button>
-      <button type="button" class="live__hit" @click="record('single')">
-        <span class="live__hit-label">Single {{ session.currentTarget }}</span>
-        <span class="live__hit-pts">1</span>
+      <button type="button" class="live__hit live__hit--single" @click="record('single')">
+        <span class="live__hit-label">{{ hitLabel('single', false) }}</span>
+        <span class="live__hit-pts">+1</span>
       </button>
       <button type="button" class="live__hit live__hit--green" @click="record('double')">
-        <span class="live__hit-label">Double {{ session.currentTarget }}</span>
-        <span class="live__hit-pts">2</span>
+        <span class="live__hit-label">{{ hitLabel('double', false) }}</span>
+        <span class="live__hit-pts">+2</span>
       </button>
       <button type="button" class="live__hit live__hit--red" @click="record('treble')">
-        <span class="live__hit-label">Treble {{ session.currentTarget }}</span>
-        <span class="live__hit-pts">3</span>
+        <span class="live__hit-label">{{ hitLabel('treble', false) }}</span>
+        <span class="live__hit-pts">+3</span>
       </button>
     </div>
 
     <div v-else class="live__grid live__grid--bull">
       <button type="button" class="live__hit live__hit--miss" @click="record('miss')">
-        <span class="live__hit-label">Miss</span>
+        <span class="live__hit-label">{{ hitLabel('miss', true) }}</span>
         <span class="live__hit-pts">0</span>
       </button>
       <button type="button" class="live__hit live__hit--green" @click="record('double')">
-        <span class="live__hit-label">Outer Bull</span>
-        <span class="live__hit-pts">2</span>
+        <span class="live__hit-label">{{ hitLabel('double', true) }}</span>
+        <span class="live__hit-pts">+2</span>
       </button>
       <button type="button" class="live__hit live__hit--red" @click="record('treble')">
-        <span class="live__hit-label">Bullseye</span>
-        <span class="live__hit-pts">3</span>
+        <span class="live__hit-label">{{ hitLabel('treble', true) }}</span>
+        <span class="live__hit-pts">+3</span>
       </button>
     </div>
 
-    <div class="live__counts">
-      <div class="live__count">
-        <span class="live__count-label">This target</span>
-        <span class="live__count-value">{{ session.currentScore }}</span>
-      </div>
-      <div class="live__count">
-        <span class="live__count-label">Darts thrown</span>
-        <span class="live__count-value">{{ session.dartsThrownTotal }}</span>
-      </div>
-    </div>
-
-    <div class="live__actions">
-      <SecondaryButton @click="handleUndo">Undo</SecondaryButton>
-      <PrimaryButton @click="handleQuit">Finish</PrimaryButton>
+    <div class="live__finish">
+      <SecondaryButton @click="handleQuit">Finish drill</SecondaryButton>
     </div>
 
     <QuitConfirmDialog
@@ -202,24 +211,37 @@ function quitProgressLabel(): string {
   margin: 0 auto;
 }
 
-.live__target {
-  position: relative;
-  text-align: center;
-  background: var(--ds-bg-2);
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-xl);
-  padding: 20px;
+.live__undo-row {
   margin-bottom: 14px;
 }
 
-.live__target-big {
+.live__undo {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--ds-border-2);
+  background: rgba(244, 236, 224, 0.04);
+  color: var(--ds-text);
+  border-radius: 9px;
   font-family: var(--ds-font-mono);
-  font-size: 72px;
-  font-weight: 800;
-  color: var(--ds-brass);
-  letter-spacing: -4px;
-  line-height: 1;
-  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.live__undo--disabled {
+  color: var(--ds-dim);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.live__undo-icon {
+  font-size: 13px;
 }
 
 .live__grid {
@@ -233,33 +255,12 @@ function quitProgressLabel(): string {
   grid-template-columns: 1fr;
 }
 
-.live__dots {
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.live__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(244, 236, 224, 0.1);
-  transition: background 0.15s;
-}
-
-.live__dot--on {
-  background: var(--ds-brass);
-  box-shadow: 0 0 8px rgba(217, 165, 74, 0.55);
-}
-
 .live__hit {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 16px 14px;
-  min-height: 80px;
+  padding: 16px 18px;
+  min-height: 68px;
   border-radius: var(--ds-radius-lg);
   background: var(--ds-bg-2);
   border: 1px solid var(--ds-border-2);
@@ -267,7 +268,9 @@ function quitProgressLabel(): string {
   font-family: var(--ds-font-display);
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition:
+    transform 0.1s,
+    box-shadow 0.12s;
 }
 
 .live__hit:active {
@@ -278,9 +281,17 @@ function quitProgressLabel(): string {
   background: var(--ds-bg-3);
 }
 
+.live__hit--single {
+  background: rgba(244, 236, 224, 0.04);
+}
+
 .live__hit--red {
   background: rgba(229, 50, 40, 0.12);
   border-color: var(--ds-accent-dim);
+}
+
+.live__hit--red:active {
+  box-shadow: 0 0 18px var(--ds-accent-glow);
 }
 
 .live__hit--green {
@@ -288,53 +299,23 @@ function quitProgressLabel(): string {
   border-color: var(--ds-green-dim);
 }
 
+.live__hit--green:active {
+  box-shadow: 0 0 18px var(--ds-green-glow);
+}
+
 .live__hit-label {
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: 0.3px;
 }
 
 .live__hit-pts {
   font-family: var(--ds-font-mono);
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: -1px;
 }
 
-.live__counts {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.live__count {
-  flex: 1;
-  background: var(--ds-bg-2);
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-md);
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.live__count-label {
-  font-family: var(--ds-font-mono);
-  font-size: 9px;
-  letter-spacing: 1.5px;
-  color: var(--ds-muted);
-  text-transform: uppercase;
-}
-
-.live__count-value {
-  font-family: var(--ds-font-mono);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--ds-text);
-}
-
-.live__actions {
-  display: flex;
-  gap: 10px;
+.live__finish {
+  margin-top: 4px;
 }
 </style>

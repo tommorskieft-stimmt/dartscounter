@@ -1,10 +1,17 @@
 <script setup lang="ts">
-// Opens when the user's turn would bring remaining to 0. They confirm
-// how many darts they threw this turn and how many landed on the double.
-// On confirm with ≥1 double → leg finishes. On confirm with 0 doubles →
-// bust (the rule: last dart must be on a double). Cancel reverts the
-// input so they can correct the score.
-import { ref, watch } from 'vue'
+// Opens when the user's turn brings remaining to 0. They pick how many
+// darts they actually threw; we auto-derive the max feasible "darts on a
+// double" from the score and default to that (the user can still dial it
+// down if some of their darts were singles/trebles).
+//
+// Feasibility rule: K doubles in a turn scoring S from N darts is valid
+// iff there exist K doubles (each even, 2..40) and (N-K) non-doubles
+// (each 0..60 integer) summing to S, with the last dart being a double
+// (hence K ≥ 1 for a valid checkout). When K = N, sum(doubles) must be
+// even and within [2K, 40K]. When K < N we also need the remaining
+// amount (S − doubles_sum) to fall in [0, 60·(N−K)] for some even
+// doubles_sum in [2K, 40K].
+import { computed, ref, watch } from 'vue'
 import { BodyText, Eyebrow, Heading, PrimaryButton, SecondaryButton, SegmentGroup } from '@/design-system'
 
 interface Props {
@@ -21,15 +28,67 @@ const emit = defineEmits<{
 
 const darts = ref<1 | 2 | 3>(3)
 const doubles = ref<0 | 1 | 2 | 3>(1)
+const userTouchedDoubles = ref(false)
+
+function feasibleDoubles(score: number, nDarts: 1 | 2 | 3, k: 0 | 1 | 2 | 3): boolean {
+  if (k > nDarts) return false
+  if (k < 1) return false
+  if (k === nDarts) {
+    return score % 2 === 0 && score >= 2 * k && score <= 40 * k
+  }
+  // K < N: need some even `doubles_sum` in [2K, 40K] such that
+  // `score − doubles_sum` ∈ [0, 60·(N−K)].
+  const maxDoubles = 40 * k
+  const minDoubles = 2 * k
+  const maxNon = 60 * (nDarts - k)
+  // doubles_sum ≥ max(minDoubles, score − maxNon)
+  // doubles_sum ≤ min(maxDoubles, score)
+  const lower = Math.max(minDoubles, score - maxNon)
+  const upper = Math.min(maxDoubles, score)
+  if (lower > upper) return false
+  // At least one even integer in [lower, upper].
+  const firstEven = lower % 2 === 0 ? lower : lower + 1
+  return firstEven <= upper
+}
+
+function maxDoublesFor(score: number, nDarts: 1 | 2 | 3): 0 | 1 | 2 | 3 {
+  for (const k of [3, 2, 1] as const) {
+    if (k <= nDarts && feasibleDoubles(score, nDarts, k)) return k
+  }
+  return 0
+}
+
+const maxDoubles = computed(() => maxDoublesFor(props.score, darts.value))
+const doublesOptions = computed(() => [0, 1, 2, 3].slice(0, darts.value + 1))
+const doublesDisabled = computed(() =>
+  [0, 1, 2, 3].filter((k) => k > maxDoubles.value),
+)
 
 watch(
   () => props.open,
   (open) => {
     if (!open) return
     darts.value = 3
-    doubles.value = 1
+    userTouchedDoubles.value = false
+    doubles.value = maxDoublesFor(props.score, 3)
   },
 )
+
+// When the user changes darts-thrown, auto-update doubles to the
+// maximum achievable unless they've manually touched it.
+watch(darts, (n) => {
+  if (userTouchedDoubles.value) {
+    const maxK = maxDoublesFor(props.score, n)
+    if (doubles.value > maxK) doubles.value = maxK
+    return
+  }
+  doubles.value = maxDoublesFor(props.score, n)
+})
+
+function onDoublesChange(value: string | number) {
+  doubles.value = value as 0 | 1 | 2 | 3
+  userTouchedDoubles.value = true
+}
 
 function confirm() {
   emit('confirm', { darts: darts.value, doubles: doubles.value })
@@ -41,7 +100,7 @@ function confirm() {
     <div v-if="open" class="ck-backdrop" @click.self="$emit('cancel')">
       <div class="ck-card" role="dialog" aria-modal="true">
         <Eyebrow style="margin-bottom: 6px; color: var(--ds-green)">Checkout?</Eyebrow>
-        <Heading :size="26" style="margin-bottom: 8px">You scored {{ score }}</Heading>
+        <Heading :size="26" style="margin-bottom: 6px">You scored {{ score }}</Heading>
         <BodyText style="margin-bottom: 20px; font-size: 14px">
           Confirm the finish. The last dart must land on a double (bull counts).
         </BodyText>
@@ -51,21 +110,22 @@ function confirm() {
 
         <div class="ck-card__label">Darts on a double</div>
         <SegmentGroup
-          v-model="doubles"
-          :options="[0, 1, 2, 3]"
-          :disabled-values="doubles > darts ? [] : []"
+          :model-value="doubles"
+          :options="doublesOptions"
+          :disabled-values="doublesDisabled"
+          @update:model-value="onDoublesChange"
         />
         <p class="ck-card__hint">
-          {{ doubles === 0 ? 'No doubles — this turn busts.' : `Leg finished in ${darts} dart${darts === 1 ? '' : 's'}.` }}
+          {{
+            doubles === 0
+              ? 'No doubles — this counts as a bust.'
+              : `Leg finished in ${darts} dart${darts === 1 ? '' : 's'} · ${doubles} on a double.`
+          }}
         </p>
 
         <div class="ck-card__actions">
           <SecondaryButton style="flex: 1" @click="$emit('cancel')">Back</SecondaryButton>
-          <PrimaryButton
-            style="flex: 1"
-            :glow="doubles > 0"
-            @click="confirm"
-          >
+          <PrimaryButton style="flex: 1" :glow="doubles > 0" @click="confirm">
             {{ doubles === 0 ? 'Record bust' : 'Confirm' }}
           </PrimaryButton>
         </div>
