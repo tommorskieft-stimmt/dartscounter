@@ -15,6 +15,7 @@ export { default as SegmentGroup } from './SegmentGroup.vue'
 export { default as StatTile } from './StatTile.vue'
 export { default as StepIndicator } from './StepIndicator.vue'
 export { default as StyledTextField } from './StyledTextField.vue'
+export { default as TrendLineChart } from './TrendLineChart.vue'
 
 export { default as BodyText } from './text/BodyText.vue'
 export { default as Eyebrow } from './text/Eyebrow.vue'

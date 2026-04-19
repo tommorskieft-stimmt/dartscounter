@@ -40,10 +40,13 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
 
       <div class="home__actions">
         <PrimaryButton @click="router.push({ name: 'play-setup' })">▸ Play</PrimaryButton>
-        <SecondaryButton @click="router.push({ name: 'profile' })">Profile</SecondaryButton>
+        <div class="home__actions-row">
+          <SecondaryButton @click="router.push({ name: 'stats' })">Stats</SecondaryButton>
+          <SecondaryButton @click="router.push({ name: 'profile' })">Profile</SecondaryButton>
+        </div>
       </div>
 
-      <p class="home__teaser">Stats roll in once you've played a match.</p>
+      <p class="home__teaser">Offline · local-only · zero tracking.</p>
     </div>
   </section>
 </template>
@@ -95,6 +98,11 @@ const greetingName = computed(() => profileStore.profile?.firstName ?? 'Player')
 .home__actions {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.home__actions-row {
+  display: flex;
   gap: 12px;
 }
 
