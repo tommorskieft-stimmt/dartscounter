@@ -38,8 +38,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/play/over',
     name: 'play-over',
-    component: () => import('@/views/ComingSoon.vue'),
-    props: { phase: 'Phase 06', feature: 'Game over' },
+    component: () => import('@/views/PlayOver.vue'),
   },
   {
     path: '/stats',
