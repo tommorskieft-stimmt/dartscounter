@@ -33,7 +33,12 @@ export type ProfileDraft = Omit<Profile, 'id' | 'createdAt' | 'soundsEnabled'> &
 
 export type GameType = 'checkout121' | 'standardCheckout' | 'barneys'
 
-export type StandardStartScore = 501 | 301 | 201 | 101
+/**
+ * Any positive integer is a valid starting score — we ship 501 / 301 /
+ * 201 as presets and let the user enter any other value via the custom
+ * field. Kept as a bare `number` so persisted data doesn't lose info.
+ */
+export type StandardStartScore = number
 
 export interface Match {
   /** Auto-incremented by Dexie. */

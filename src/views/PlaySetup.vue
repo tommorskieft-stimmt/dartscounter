@@ -12,35 +12,80 @@ import {
 import {
   DEFAULT_BARNEYS,
   DEFAULT_CHECKOUT_121,
-  DEFAULT_STANDARD,
   GAME_MODE_DISPLAY,
   type GameMode,
 } from '@/game/GameMode'
-import type { GameType, StandardStartScore } from '@/types/domain'
+import type { GameType } from '@/types/domain'
 import { usePlayConfigStore } from '@/stores/playConfig'
 
 const router = useRouter()
 const playConfig = usePlayConfigStore()
 
+type ScorePreset = 201 | 301 | 501 | 'custom'
+type LegsPreset = 1 | 3 | 5 | 'custom'
+
 interface State {
   mode: GameType
+  // 121
   maxDarts: number
   rounds: 10 | 25 | 'endless'
-  startScore: StandardStartScore
-  legs: 1 | 3 | 5 | 'endless'
+  // Standard
+  scorePreset: ScorePreset
+  customScore: string
+  legsPreset: LegsPreset
+  customLegs: string
 }
 
 const state = reactive<State>({
   mode: 'checkout121',
   maxDarts: DEFAULT_CHECKOUT_121.maxDarts,
   rounds: (DEFAULT_CHECKOUT_121.rounds ?? 10) as 10,
-  startScore: DEFAULT_STANDARD.startScore,
-  legs: (DEFAULT_STANDARD.legs ?? 1) as 1,
+  scorePreset: 501,
+  customScore: '',
+  legsPreset: 1,
+  customLegs: '',
 })
 
 const display = computed(() => GAME_MODE_DISPLAY[state.mode])
 
+const customScoreNum = computed(() => {
+  const n = parseInt(state.customScore || '', 10)
+  return Number.isFinite(n) ? n : Number.NaN
+})
+
+const customLegsNum = computed(() => {
+  const n = parseInt(state.customLegs || '', 10)
+  return Number.isFinite(n) ? n : Number.NaN
+})
+
+const customScoreValid = computed(
+  () => customScoreNum.value >= 2 && customScoreNum.value <= 999,
+)
+const customLegsValid = computed(
+  () => customLegsNum.value >= 1 && customLegsNum.value <= 99,
+)
+
+const resolvedStartScore = computed(() => {
+  if (state.scorePreset === 'custom') {
+    return customScoreValid.value ? customScoreNum.value : null
+  }
+  return state.scorePreset
+})
+
+const resolvedLegs = computed(() => {
+  if (state.legsPreset === 'custom') {
+    return customLegsValid.value ? customLegsNum.value : null
+  }
+  return state.legsPreset
+})
+
+const canStart = computed(() => {
+  if (state.mode !== 'standardCheckout') return true
+  return resolvedStartScore.value !== null && resolvedLegs.value !== null
+})
+
 function startGame() {
+  if (!canStart.value) return
   let mode: GameMode
   switch (state.mode) {
     case 'checkout121':
@@ -53,8 +98,8 @@ function startGame() {
     case 'standardCheckout':
       mode = {
         type: 'standardCheckout',
-        startScore: state.startScore,
-        legs: state.legs === 'endless' ? null : state.legs,
+        startScore: resolvedStartScore.value as number,
+        legs: resolvedLegs.value,
       }
       break
     case 'barneys':
@@ -63,6 +108,16 @@ function startGame() {
   }
   playConfig.set(mode)
   router.push({ name: 'play-live' })
+}
+
+function onCustomScoreInput(ev: Event) {
+  const el = ev.target as HTMLInputElement
+  state.customScore = el.value.replace(/[^0-9]/g, '').slice(0, 3)
+}
+
+function onCustomLegsInput(ev: Event) {
+  const el = ev.target as HTMLInputElement
+  state.customLegs = el.value.replace(/[^0-9]/g, '').slice(0, 2)
 }
 </script>
 
@@ -101,10 +156,40 @@ function startGame() {
 
     <template v-else-if="state.mode === 'standardCheckout'">
       <Eyebrow style="margin: 24px 0 10px">Starting score</Eyebrow>
-      <SegmentGroup v-model="state.startScore" :options="[101, 201, 301, 501]" />
+      <SegmentGroup
+        v-model="state.scorePreset"
+        :options="[501, 301, 201, 'custom']"
+        :labels="['501', '301', '201', 'Custom']"
+      />
+      <input
+        v-if="state.scorePreset === 'custom'"
+        class="setup__custom"
+        :class="{ 'setup__custom--valid': customScoreValid }"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        :value="state.customScore"
+        placeholder="e.g. 701"
+        @input="onCustomScoreInput"
+      />
 
       <Eyebrow style="margin: 24px 0 10px">Legs to win</Eyebrow>
-      <SegmentGroup v-model="state.legs" :options="[1, 3, 5, 'endless']" />
+      <SegmentGroup
+        v-model="state.legsPreset"
+        :options="[1, 3, 5, 'custom']"
+        :labels="['1', '3', '5', 'Custom']"
+      />
+      <input
+        v-if="state.legsPreset === 'custom'"
+        class="setup__custom"
+        :class="{ 'setup__custom--valid': customLegsValid }"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        :value="state.customLegs"
+        placeholder="e.g. 7"
+        @input="onCustomLegsInput"
+      />
     </template>
 
     <template v-else>
@@ -112,7 +197,7 @@ function startGame() {
         <Eyebrow style="margin-bottom: 10px">How it works</Eyebrow>
         <BodyText style="font-size: 14px">
           Work through 20, 19, 18, 17, 16, 15, bull. Three darts per target. Singles / doubles /
-          trebles score 1 / 2 / 3. Maximum 63.
+          trebles score 1 / 2 / 3. On the bull: outer = 2 pts, bullseye = 3 pts. Maximum 63.
         </BodyText>
       </div>
     </template>
@@ -120,7 +205,7 @@ function startGame() {
     <p class="setup__note">{{ display.blurb }}</p>
 
     <div class="setup__footer">
-      <PrimaryButton @click="startGame">▸ Start</PrimaryButton>
+      <PrimaryButton :disabled="!canStart" @click="startGame">▸ Start</PrimaryButton>
     </div>
   </section>
 </template>
@@ -193,6 +278,34 @@ function startGame() {
   border-radius: var(--ds-radius-lg);
   padding: 14px 16px;
   margin-top: 24px;
+}
+
+.setup__custom {
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--ds-input-h);
+  padding: 0 16px;
+  background: var(--ds-bg-3);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  color: var(--ds-text);
+  font-family: var(--ds-font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  text-align: center;
+  caret-color: var(--ds-accent);
+  letter-spacing: -0.5px;
+  transition: border 0.15s;
+}
+
+.setup__custom--valid {
+  border-color: var(--ds-accent-dim);
+}
+
+.setup__custom:focus-visible {
+  border-color: var(--ds-accent);
 }
 
 .setup__note {

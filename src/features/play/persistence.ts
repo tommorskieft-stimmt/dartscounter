@@ -35,7 +35,7 @@ export async function persist121Match(input: {
 }
 
 export async function persistStandardMatch(input: {
-  startScore: 501 | 301 | 201 | 101
+  startScore: number
   legsTarget: number | null
   legsWon: number
   dartsTotal: number

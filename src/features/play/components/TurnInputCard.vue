@@ -2,12 +2,21 @@
 import { computed, ref, watch } from 'vue'
 import { Eyebrow, PrimaryButton, SegmentGroup } from '@/design-system'
 
+// Turn-input card used by the live-game views. The darts-thrown selector
+// is shown for 121 Checkout (where bookkeeping every throw matters) and
+// hidden for Standard Checkout (where every ordinary turn is assumed 3
+// darts and the finishing turn is captured separately in the checkout
+// confirm dialog).
 interface Props {
-  dartsAvailable: number // how many darts left this round (for 121) or 3 otherwise
+  dartsAvailable: number
   eyebrow?: string
+  showDartsSelector?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), { eyebrow: 'Enter Turn' })
+const props = withDefaults(defineProps<Props>(), {
+  eyebrow: 'Enter Turn',
+  showDartsSelector: true,
+})
 
 const emit = defineEmits<{
   submit: [payload: { scoreThrown: number; dartsThrown: 1 | 2 | 3 }]
@@ -17,6 +26,7 @@ const dartsThrown = ref<1 | 2 | 3>(3)
 const scoreInput = ref('')
 
 const effDarts = computed<1 | 2 | 3>(() => {
+  if (!props.showDartsSelector) return 3
   const n = Math.min(dartsThrown.value, props.dartsAvailable) as 1 | 2 | 3
   return n < 1 ? 1 : n
 })
@@ -30,10 +40,7 @@ const scoreNum = computed(() => {
 })
 
 const scoreValid = computed(
-  () =>
-    !Number.isNaN(scoreNum.value) &&
-    scoreNum.value >= 0 &&
-    scoreNum.value <= maxScore.value,
+  () => !Number.isNaN(scoreNum.value) && scoreNum.value >= 0 && scoreNum.value <= maxScore.value,
 )
 
 const canSubmit = computed(() => scoreValid.value && effDarts.value > 0)
@@ -46,10 +53,10 @@ const disabledDartOpts = computed(() => {
   return out
 })
 
-// Clamp `dartsThrown` if the available darts drop below the current pick.
 watch(
   () => props.dartsAvailable,
   (available) => {
+    if (!props.showDartsSelector) return
     if (dartsThrown.value > available) {
       dartsThrown.value = (Math.max(1, available) as 1 | 2 | 3) || 1
     }
@@ -60,7 +67,7 @@ function submit() {
   if (!canSubmit.value) return
   emit('submit', { scoreThrown: scoreNum.value, dartsThrown: effDarts.value })
   scoreInput.value = ''
-  dartsThrown.value = 3
+  if (props.showDartsSelector) dartsThrown.value = 3
 }
 
 function onScoreInput(ev: Event) {
@@ -73,15 +80,21 @@ function onScoreInput(ev: Event) {
   <div class="turn-input">
     <Eyebrow style="margin-bottom: 10px">{{ eyebrow }}</Eyebrow>
 
-    <div class="turn-input__sublabel">Darts Thrown</div>
-    <SegmentGroup
-      v-model="dartsThrown"
-      :options="[1, 2, 3]"
-      :disabled-values="disabledDartOpts"
-    />
+    <template v-if="showDartsSelector">
+      <div class="turn-input__sublabel">Darts Thrown</div>
+      <SegmentGroup
+        v-model="dartsThrown"
+        :options="[1, 2, 3]"
+        :disabled-values="disabledDartOpts"
+      />
 
-    <div class="turn-input__sublabel turn-input__sublabel--gap">
-      Score Thrown <span class="turn-input__hint">(max {{ maxScore }})</span>
+      <div class="turn-input__sublabel turn-input__sublabel--gap">
+        Score Thrown <span class="turn-input__hint">(max {{ maxScore }})</span>
+      </div>
+    </template>
+
+    <div v-else class="turn-input__sublabel">
+      Score this turn <span class="turn-input__hint">(max 180)</span>
     </div>
 
     <input
@@ -97,7 +110,7 @@ function onScoreInput(ev: Event) {
     />
 
     <div style="margin-top: 12px">
-      <PrimaryButton :disabled="!canSubmit" @click="submit">Submit Turn</PrimaryButton>
+      <PrimaryButton :disabled="!canSubmit" @click="submit">Submit</PrimaryButton>
     </div>
   </div>
 </template>
